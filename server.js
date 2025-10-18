@@ -24,7 +24,13 @@ const io = new Server(server, {
 
 // CORS configuration for Express routes
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000", "http://localhost:8080"],
+  origin: [
+    "http://localhost:5173", 
+    "http://localhost:3000", 
+    "http://localhost:8080",
+    // Add your production domain here
+    process.env.FRONTEND_URL || "https://your-frontend-domain.vercel.app"
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
