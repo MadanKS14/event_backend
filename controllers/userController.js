@@ -128,4 +128,35 @@ const updateUserProfile = async (req, res) => {
 };
 
 
-export { registerUser, loginUser, getUsers,getMe,updateUserProfile };
+// In userController.js
+const createUserByAdmin = async (req, res) => {
+  const { name, email, password, role } = req.body;
+
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ message: 'Please provide name, email, password, and role' });
+  }
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role. Must be "user" or "admin".' });
+  }
+
+  const userExists = await User.findOne({ email });
+  if (userExists) {
+    return res.status(400).json({ message: 'User with this email already exists' });
+  }
+
+  try {
+    const user = await User.create({ name, email, password, role }); // Explicitly set role
+    res.status(201).json({
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    res.status(400).json({ message: 'User creation failed', error: error.message });
+  }
+};
+
+
+export { registerUser, loginUser, getUsers,getMe,updateUserProfile,createUserByAdmin };

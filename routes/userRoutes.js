@@ -4,7 +4,8 @@ import {
   loginUser,
   getUsers,
   getMe,
-  updateUserProfile, // ✅ Import getMe controller
+  updateUserProfile,
+  createUserByAdmin, 
 } from "../controllers/userController.js";
 import { protect, authorizeAdmin } from "../middleware/authMiddleware.js";
 
@@ -21,5 +22,7 @@ router.get("/me", protect, getMe);
 router.get("/", protect, authorizeAdmin, getUsers);
 
 router.put("/profile", protect, updateUserProfile);
+
+router.post('/', protect, authorizeAdmin, createUserByAdmin);
 
 export default router;

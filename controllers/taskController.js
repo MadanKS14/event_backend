@@ -1,8 +1,9 @@
 import Task from "../models/taskModel.js";
 import Event from "../models/eventModel.js";
 
-// Create a task for an event
+// @desc    Create a task for an event
 // @route   POST /api/tasks
+// @access  Private (Admin Only)
 const createTask = async (req, res) => {
   const { name, deadline, eventId, assignedAttendeeId } = req.body;
 
@@ -11,36 +12,34 @@ const createTask = async (req, res) => {
   }
 
   try {
+    // --- CHECK 1: Ensure event exists and is not completed ---
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
+    if (new Date(event.date) < new Date()) {
+      return res.status(403).json({ message: 'Cannot add tasks to a completed event' });
+    }
+    // --- END CHECK ---
 
     // --- RBAC Security Check ---
-    // Use the role from auth middleware. Only admin can create tasks.
     if (req.user.role !== "admin") {
       return res
-        .status(403) // 403 Forbidden
+        .status(403)
         .json({ message: "User not authorized to create tasks" });
     }
-
-    // (Optional check: ensure admin is the one who created this event)
-    // if (event.createdBy.toString() !== req.user.id) {
-    //   return res
-    //     .status(401)
-    //     .json({ message: "Admin not authorized for this specific event" });
-    // }
 
     const task = await Task.create({
       name,
       deadline,
       event: eventId,
       assignedAttendee: assignedAttendeeId,
-      // We can assume 'status' defaults to 'Pending' in your model
+      status: "Pending", // Explicitly set status
     });
 
     const io = req.app.get("socketio");
     const populatedTask = await task.populate("assignedAttendee", "name email");
+    // Emit to the specific event room
     io.to(eventId).emit("task-created", populatedTask);
 
     res.status(201).json(populatedTask);
@@ -51,21 +50,19 @@ const createTask = async (req, res) => {
   }
 };
 
-// Get all tasks for a specific event
+
+
+// @desc    Get all tasks for a specific event
 // @route   GET /api/tasks/event/:eventId
+// @access  Private (Role-Aware)
 const getTasksByEvent = async (req, res) => {
   try {
-    // --- RBAC Security Check ---
     let query = { event: req.params.eventId };
 
-    // If the user is a regular user, only find tasks
-    // assigned to them for this event.
     if (req.user.role === "user") {
       query.assignedAttendee = req.user._id;
     }
 
-    // If user is 'admin', the query has no 'assignedAttendee' filter,
-    // so they will get ALL tasks for the event.
     const tasks = await Task.find(query).populate(
       "assignedAttendee",
       "name email"
@@ -77,8 +74,10 @@ const getTasksByEvent = async (req, res) => {
   }
 };
 
-// Update task status
+
+// @desc    Update task status
 // @route   PUT /api/tasks/:id
+// @access  Private (Role-Aware)
 const updateTaskStatus = async (req, res) => {
   const { status } = req.body;
 
@@ -92,15 +91,22 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // --- NEW AUTHORIZATION CHECK ---
-    // Check if the task is assigned to the logged-in user
+    // --- CHECK 2: Ensure the event is not completed ---
+    const event = await Event.findById(task.event);
+    if (!event) {
+        // Should ideally not happen if DB is consistent, but good to check
+        return res.status(404).json({ message: "Associated event not found" });
+    }
+    if (new Date(event.date) < new Date()) {
+      return res.status(403).json({ message: 'Cannot update tasks for a completed event' });
+    }
+    // --- END CHECK ---
+
     const isAssignedUser =
       task.assignedAttendee &&
       task.assignedAttendee.toString() === req.user._id.toString();
 
-    // Allow update if:
-    // 1. The user is an 'admin'
-    // 2. The user is the one assigned to the task
+    // Allow update if admin OR assigned user
     if (req.user.role === "admin" || isAssignedUser) {
       task.status = status;
       await task.save();
@@ -110,24 +116,24 @@ const updateTaskStatus = async (req, res) => {
         "assignedAttendee",
         "name email"
       );
+      // Emit to the specific event room
       io.to(task.event.toString()).emit("task-updated", populatedTask);
 
       res.status(200).json(populatedTask);
     } else {
-      // If not admin AND not assigned user, deny access.
-      return res.status(403).json({ message: "User not authorized" }); // 403 Forbidden
+      return res.status(403).json({ message: "User not authorized" });
     }
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-// Get event progress based on task completion
+
+// @desc    Get event progress based on task completion
 // @route   GET /api/tasks/progress/:eventId
+// @access  Private
 const getEventProgress = async (req, res) => {
   try {
-    // This query might also need to be user-aware
-    // For now, we'll get progress for ALL tasks in the event
     const totalTasks = await Task.countDocuments({ event: req.params.eventId });
     if (totalTasks === 0) {
       return res.status(200).json({ progress: 0 });
