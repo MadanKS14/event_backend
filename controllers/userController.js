@@ -12,7 +12,7 @@ const generateToken = (id) => {
 /* ------------------------- REGISTER USER ------------------------- */
 // @route   POST /api/users/register
 // @access  Public
-export const registerUser = async (req, res) => {
+ const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -42,7 +42,7 @@ export const registerUser = async (req, res) => {
 /* ------------------------- LOGIN USER ------------------------- */
 // @route   POST /api/users/login
 // @access  Public
-export const loginUser = async (req, res) => {
+ const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -67,7 +67,7 @@ export const loginUser = async (req, res) => {
 /* ------------------------- GET ALL USERS (Admin Only) ------------------------- */
 // @route   GET /api/users
 // @access  Private/Admin
-export const getUsers = async (req, res) => {
+ const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select("-password");
     res.status(200).json(users);
@@ -79,7 +79,7 @@ export const getUsers = async (req, res) => {
 /* ------------------------- GET CURRENT LOGGED-IN USER ------------------------- */
 // @route   GET /api/users/me
 // @access  Private
-export const getMe = async (req, res) => {
+ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
     if (!user) {
