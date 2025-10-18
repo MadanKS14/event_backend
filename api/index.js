@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import http from "http"; // <-- 1. Import Node's built-in http module
+import { Server } from "socket.io"; // <-- 2. Import Server from socket.io
 import userRoutes from "../routes/userRoutes.js";
 import eventRoutes from "../routes/eventRoutes.js";
 import taskRoutes from "../routes/taskRoutes.js";
@@ -12,23 +14,51 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const httpServer = http.createServer(app); // <-- 3. Create an http server from the Express app
 
-// CORS configuration for Express routes
-app.use(cors({
-  origin: [
-    "http://localhost:5173", 
-    "http://localhost:3000", 
-    "http://localhost:8080",
-    // Add your production domain here
-    process.env.FRONTEND_URL || "https://your-frontend-domain.vercel.app"
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+// --- Define your allowed frontend URLs ---
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL, // This should be your Vercel frontend URL
+  "https://event-frontend-madanks.vercel.app", // Hardcoding your known frontend URL is a good fallback
+];
+
+// --- 4. Setup Socket.IO Server ---
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins, // Use the secure list of origins
+    methods: ["GET", "POST"],
+  },
+});
+
+// --- 5. Setup Express CORS ---
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// --- 6. Make Socket.IO accessible to your controllers ---
+app.set("socketio", io);
+
+// --- 7. Handle new socket connections ---
+io.on("connection", (socket) => {
+  console.log("✅ User connected:", socket.id);
+
+  socket.on("join-event-room", (eventId) => {
+    socket.join(eventId);
+    console.log(`Socket ${socket.id} joined room for event ${eventId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ User disconnected:", socket.id);
+  });
+});
 
 // API routes
 app.use("/api/users", userRoutes);
@@ -42,12 +72,12 @@ app.get("/api/health", (req, res) => {
 
 // Root endpoint
 app.get("/", (req, res) => {
-  res.json({ 
-    message: "Event Backend API", 
+  res.json({
+    message: "Event Backend API",
     version: "1.0.0",
-    status: "running"
+    status: "running",
   });
 });
 
-// Export the app for Vercel
-export default app;
+// --- 8. Export the httpServer for Vercel, NOT the Express app ---
+export default httpServer;
