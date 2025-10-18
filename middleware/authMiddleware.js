@@ -27,4 +27,15 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Add this function to your auth middleware file
+
+export const authorizeAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next(); // User is an admin, proceed to the next middleware/controller
+  } else {
+    res.status(403); // 403 Forbidden
+    throw new Error('Access denied. Admin role required.');
+  }
+};
+
 export { protect };

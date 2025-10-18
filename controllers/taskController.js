@@ -15,17 +15,28 @@ const createTask = async (req, res) => {
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
-    if (event.createdBy.toString() !== req.user.id) {
+
+    // --- RBAC Security Check ---
+    // Use the role from auth middleware. Only admin can create tasks.
+    if (req.user.role !== "admin") {
       return res
-        .status(401)
-        .json({ message: "User not authorized to manage this event" });
+        .status(403) // 403 Forbidden
+        .json({ message: "User not authorized to create tasks" });
     }
+
+    // (Optional check: ensure admin is the one who created this event)
+    // if (event.createdBy.toString() !== req.user.id) {
+    //   return res
+    //     .status(401)
+    //     .json({ message: "Admin not authorized for this specific event" });
+    // }
 
     const task = await Task.create({
       name,
       deadline,
       event: eventId,
       assignedAttendee: assignedAttendeeId,
+      // We can assume 'status' defaults to 'Pending' in your model
     });
 
     const io = req.app.get("socketio");
@@ -44,13 +55,25 @@ const createTask = async (req, res) => {
 // @route   GET /api/tasks/event/:eventId
 const getTasksByEvent = async (req, res) => {
   try {
-    const tasks = await Task.find({ event: req.params.eventId }).populate(
+    // --- RBAC Security Check ---
+    let query = { event: req.params.eventId };
+
+    // If the user is a regular user, only find tasks
+    // assigned to them for this event.
+    if (req.user.role === "user") {
+      query.assignedAttendee = req.user._id;
+    }
+
+    // If user is 'admin', the query has no 'assignedAttendee' filter,
+    // so they will get ALL tasks for the event.
+    const tasks = await Task.find(query).populate(
       "assignedAttendee",
       "name email"
     );
+
     res.status(200).json(tasks);
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -69,19 +92,31 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const event = await Event.findById(task.event);
-    if (event.createdBy.toString() !== req.user.id) {
-      return res.status(401).json({ message: "User not authorized" });
+    // --- NEW AUTHORIZATION CHECK ---
+    // Check if the task is assigned to the logged-in user
+    const isAssignedUser =
+      task.assignedAttendee &&
+      task.assignedAttendee.toString() === req.user._id.toString();
+
+    // Allow update if:
+    // 1. The user is an 'admin'
+    // 2. The user is the one assigned to the task
+    if (req.user.role === "admin" || isAssignedUser) {
+      task.status = status;
+      await task.save();
+
+      const io = req.app.get("socketio");
+      const populatedTask = await task.populate(
+        "assignedAttendee",
+        "name email"
+      );
+      io.to(task.event.toString()).emit("task-updated", populatedTask);
+
+      res.status(200).json(populatedTask);
+    } else {
+      // If not admin AND not assigned user, deny access.
+      return res.status(403).json({ message: "User not authorized" }); // 403 Forbidden
     }
-
-    task.status = status;
-    await task.save();
-
-    const io = req.app.get("socketio");
-    const populatedTask = await task.populate("assignedAttendee", "name email");
-    io.to(task.event.toString()).emit("task-updated", populatedTask);
-
-    res.status(200).json(populatedTask);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -91,6 +126,8 @@ const updateTaskStatus = async (req, res) => {
 // @route   GET /api/tasks/progress/:eventId
 const getEventProgress = async (req, res) => {
   try {
+    // This query might also need to be user-aware
+    // For now, we'll get progress for ALL tasks in the event
     const totalTasks = await Task.countDocuments({ event: req.params.eventId });
     if (totalTasks === 0) {
       return res.status(200).json({ progress: 0 });
@@ -106,9 +143,4 @@ const getEventProgress = async (req, res) => {
   }
 };
 
-export {
-  createTask,
-  getTasksByEvent,
-  updateTaskStatus,
-  getEventProgress,
-};
+export { createTask, getTasksByEvent, updateTaskStatus, getEventProgress };

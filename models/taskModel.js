@@ -25,6 +25,16 @@ const taskSchema = new mongoose.Schema({
     required: true,
     ref: 'User',
   },
+  isCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // This links it to the User model
+      required: false, // Can be unassigned
+    },
+    
 }, {
   timestamps: true,
 });

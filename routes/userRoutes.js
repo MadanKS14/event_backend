@@ -4,12 +4,16 @@ import {
   loginUser,
   getUsers,
 } from "../controllers/userController.js";
-import { protect } from "../middleware/authMiddleware.js";
+
+// 1. Import authorizeAdmin
+import { protect, authorizeAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.route("/").get(protect, getUsers);
+
+// 2. Add authorizeAdmin to this route
+router.route("/").get(protect, authorizeAdmin, getUsers);
 
 export default router;

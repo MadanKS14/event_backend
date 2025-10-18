@@ -28,6 +28,7 @@ app.use(cors({
     "http://localhost:5173", 
     "http://localhost:3000", 
     "http://localhost:8080",
+    "https://event-frontend-madanks.vercel.app",
     // Add your production domain here
     process.env.FRONTEND_URL || "https://your-frontend-domain.vercel.app"
   ],
