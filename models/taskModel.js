@@ -31,8 +31,8 @@ const taskSchema = new mongoose.Schema({
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // This links it to the User model
-      required: false, // Can be unassigned
+      ref: 'User', 
+      required: false,
     },
     
 }, {

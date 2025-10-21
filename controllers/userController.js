@@ -2,16 +2,13 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/userModel.js";
 
-/* ------------------------- TOKEN GENERATION ------------------------- */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
 
-/* ------------------------- REGISTER USER ------------------------- */
-// @route   POST /api/users/register
-// @access  Public
+
  const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -31,7 +28,7 @@ const generateToken = (id) => {
       _id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role, // user or admin
+      role: user.role, 
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -39,9 +36,7 @@ const generateToken = (id) => {
   }
 };
 
-/* ------------------------- LOGIN USER ------------------------- */
-// @route   POST /api/users/login
-// @access  Public
+
  const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -56,7 +51,7 @@ const generateToken = (id) => {
       _id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role, // important for frontend role-based routing
+      role: user.role,
       token: generateToken(user._id),
     });
   } else {
@@ -64,9 +59,7 @@ const generateToken = (id) => {
   }
 };
 
-/* ------------------------- GET ALL USERS (Admin Only) ------------------------- */
-// @route   GET /api/users
-// @access  Private/Admin
+
  const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select("-password");
@@ -76,9 +69,7 @@ const generateToken = (id) => {
   }
 };
 
-/* ------------------------- GET CURRENT LOGGED-IN USER ------------------------- */
-// @route   GET /api/users/me
-// @access  Private
+
  const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
@@ -91,36 +82,31 @@ const generateToken = (id) => {
   }
 };
 
-// @desc    Update user profile (name & password)
-// @route   PUT /api/users/profile
-// @access  Private
+
+
 const updateUserProfile = async (req, res) => {
   const { name, password } = req.body;
 
-  // Find the user by their ID (from the 'protect' middleware)
   const user = await User.findById(req.user._id);
 
   if (user) {
-    // Update name if it was provided
     if (name) {
       user.name = name;
     }
 
-    // Update password if it was provided
-    // The .pre('save') hook in your userModel will automatically hash it
+    
     if (password) {
       user.password = password;
     }
 
     const updatedUser = await user.save();
 
-    // Send back the updated user info with a new token
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
-      token: generateToken(updatedUser._id), // Send a new token
+      token: generateToken(updatedUser._id),
     });
   } else {
     res.status(404).json({ message: "User not found" });
@@ -128,7 +114,7 @@ const updateUserProfile = async (req, res) => {
 };
 
 
-// In userController.js
+
 const createUserByAdmin = async (req, res) => {
   const { name, email, password, role } = req.body;
 
@@ -145,7 +131,7 @@ const createUserByAdmin = async (req, res) => {
   }
 
   try {
-    const user = await User.create({ name, email, password, role }); // Explicitly set role
+    const user = await User.create({ name, email, password, role });
     res.status(201).json({
       _id: user.id,
       name: user.name,

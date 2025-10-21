@@ -1,5 +1,5 @@
 import Event from '../models/eventModel.js';
-import Task from '../models/taskModel.js'; // Import Task to delete tasks when an event is deleted
+import Task from '../models/taskModel.js';
 
 // @desc    Create a new event
 // @route   POST /api/events
@@ -16,7 +16,7 @@ const createEvent = async (req, res) => {
       date,
       location,
       createdBy: req.user.id,
-      attendees: [req.user.id], // Automatically add the creator as an attendee
+      attendees: [req.user.id],
     });
     res.status(201).json(event);
   } catch (error) {
@@ -31,9 +31,9 @@ const getEvents = async (req, res) => {
   try {
     let query = {};
     if (req.user.role === 'admin') {
-      query = {}; // Admin gets all events
+      query = {};
     } else {
-      query = { attendees: req.user._id }; // User gets events they attend
+      query = { attendees: req.user._id };
     }
     const events = await Event.find(query).populate('attendees', 'name');
     res.status(200).json(events);
@@ -52,11 +52,9 @@ const updateEvent = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    // --- NEW CHECK ---
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot modify a completed event' });
     }
-    // --- END CHECK ---
 
     if (req.user.role !== 'admin') {
        return res.status(401).json({ message: 'User not authorized' });
@@ -85,13 +83,11 @@ const deleteEvent = async (req, res) => {
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot delete a completed event' });
     }
-    // --- END CHECK ---
 
     if (req.user.role !== 'admin') {
        return res.status(401).json({ message: 'User not authorized' });
     }
     
-    // Also delete all tasks for this event
     await Task.deleteMany({ event: event._id });
 
     await event.deleteOne();
@@ -111,11 +107,9 @@ const addAttendee = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
-    // --- NEW CHECK ---
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot add attendees to a completed event' });
     }
-    // --- END CHECK ---
 
     if (req.user.role !== 'admin') {
        return res.status(401).json({ message: 'User not authorized' });
@@ -144,11 +138,9 @@ const removeAttendee = async (req, res) => {
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ message: 'Event not found' });
     
-    // --- NEW CHECK ---
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot remove attendees from a completed event' });
     }
-    // --- END CHECK ---
 
     if (req.user.role !== 'admin') {
        return res.status(401).json({ message: 'User not authorized' });
@@ -172,7 +164,6 @@ const getEventById = async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    // RBAC check: Allow if admin or an attendee
     const isAttendee = event.attendees.some(att => att._id.toString() === req.user.id);
     if (req.user.role === 'admin' || isAttendee) {
       res.status(200).json(event);

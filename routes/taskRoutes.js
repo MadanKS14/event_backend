@@ -9,12 +9,11 @@ import { protect,authorizeAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Protect all task routes
 router.use(protect);
 
 router.post('/',authorizeAdmin, createTask);
 router.get('/event/:eventId', getTasksByEvent);
 router.put('/:id', updateTaskStatus);
-router.get('/progress/:eventId', getEventProgress); // For the bonus point
+router.get('/progress/:eventId', getEventProgress);
 
 export default router;

@@ -12,7 +12,6 @@ const createTask = async (req, res) => {
   }
 
   try {
-    // --- CHECK 1: Ensure event exists and is not completed ---
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
@@ -20,9 +19,7 @@ const createTask = async (req, res) => {
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot add tasks to a completed event' });
     }
-    // --- END CHECK ---
 
-    // --- RBAC Security Check ---
     if (req.user.role !== "admin") {
       return res
         .status(403)
@@ -34,12 +31,11 @@ const createTask = async (req, res) => {
       deadline,
       event: eventId,
       assignedAttendee: assignedAttendeeId,
-      status: "Pending", // Explicitly set status
+      status: "Pending",
     });
 
     const io = req.app.get("socketio");
     const populatedTask = await task.populate("assignedAttendee", "name email");
-    // Emit to the specific event room
     io.to(eventId).emit("task-created", populatedTask);
 
     res.status(201).json(populatedTask);
@@ -91,22 +87,18 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // --- CHECK 2: Ensure the event is not completed ---
     const event = await Event.findById(task.event);
     if (!event) {
-        // Should ideally not happen if DB is consistent, but good to check
         return res.status(404).json({ message: "Associated event not found" });
     }
     if (new Date(event.date) < new Date()) {
       return res.status(403).json({ message: 'Cannot update tasks for a completed event' });
     }
-    // --- END CHECK ---
 
     const isAssignedUser =
       task.assignedAttendee &&
       task.assignedAttendee.toString() === req.user._id.toString();
 
-    // Allow update if admin OR assigned user
     if (req.user.role === "admin" || isAssignedUser) {
       task.status = status;
       await task.save();
@@ -116,7 +108,6 @@ const updateTaskStatus = async (req, res) => {
         "assignedAttendee",
         "name email"
       );
-      // Emit to the specific event room
       io.to(task.event.toString()).emit("task-updated", populatedTask);
 
       res.status(200).json(populatedTask);

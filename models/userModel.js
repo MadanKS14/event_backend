@@ -15,8 +15,8 @@ const userSchema = new mongoose.Schema({
 
   role: {
   type: String,
-  enum: ['user', 'admin'], // Restrict to only these two values
-  default: 'user'         // All new users are 'user' by default
+  enum: ['user', 'admin'], 
+  default: 'user'         
 },
 
   password: {
@@ -27,7 +27,6 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Middleware to hash password before saving the user document
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
