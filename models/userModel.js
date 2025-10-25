@@ -12,13 +12,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     match: [/.+\@.+\..+/, 'Please fill a valid email address'],
   },
-
   role: {
-  type: String,
-  enum: ['user', 'admin'], 
-  default: 'user'         
+    type: String,
+    enum: ['user', 'admin'],
 },
-
   password: {
     type: String,
     required: [true, 'Please add a password'],
