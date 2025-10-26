@@ -10,30 +10,27 @@ import connectDB from "./config/db.js";
 
 dotenv.config();
 
-// Connect to database
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
-// --- Define your allowed origins ---
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:8080",
   "https://event-frontend-madanks.vercel.app",
-  process.env.FRONTEND_URL, // In case you use the env var
+  process.env.FRONTEND_URL,
 ];
 
-// --- 1. Socket.IO Server Setup (Fixed CORS) ---
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins, // <-- Use your secure origin list
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
 
-// --- 2. Express CORS setup ---
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
@@ -44,10 +41,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Make socket.io available to controllers
 app.set("socketio", io);
 
-// Handle socket.io connections
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
@@ -66,12 +61,13 @@ io.on("connection", (socket) => {
   });
 });
 
-// --- 3. API Routes ---
 app.use("/api/users", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/tasks", taskRoutes);
 
-// --- 4. THIS IS THE FIX ---
-// Remove the server.listen() and export the server
-// Vercel will handle the rest.
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT;
+  server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+}
+
 export default server;
