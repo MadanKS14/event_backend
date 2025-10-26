@@ -16,27 +16,22 @@ connectDB();
 const app = express();
 const httpServer = http.createServer(app); // <-- 3. Create an http server from the Express app
 
-// --- Define your allowed frontend URLs ---
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  process.env.FRONTEND_URL, // This should be your Vercel frontend URL
-  "https://event-frontend-madanks.vercel.app", // Hardcoding your known frontend URL is a good fallback
-];
-
 // --- 4. Setup Socket.IO Server ---
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins, // Use the secure list of origins
-    methods: ["GET", "POST"],
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
   },
 });
 
 // --- 5. Setup Express CORS ---
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "*",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
   })
 );
 
