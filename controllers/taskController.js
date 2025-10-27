@@ -1,9 +1,7 @@
 import Task from "../models/taskModel.js";
 import Event from "../models/eventModel.js";
 
-// @desc    Create a task for an event
-// @route   POST /api/tasks
-// @access  Private (Admin Only)
+
 const createTask = async (req, res) => {
   const { name, deadline, eventId, assignedAttendeeId } = req.body;
 
@@ -47,10 +45,6 @@ const createTask = async (req, res) => {
 };
 
 
-
-// @desc    Get all tasks for a specific event
-// @route   GET /api/tasks/event/:eventId
-// @access  Private (Role-Aware)
 const getTasksByEvent = async (req, res) => {
   try {
     let query = { event: req.params.eventId };
@@ -71,9 +65,7 @@ const getTasksByEvent = async (req, res) => {
 };
 
 
-// @desc    Update task status
-// @route   PUT /api/tasks/:id
-// @access  Private (Role-Aware)
+
 const updateTaskStatus = async (req, res) => {
   const { status } = req.body;
 
@@ -120,9 +112,7 @@ const updateTaskStatus = async (req, res) => {
 };
 
 
-// @desc    Get event progress based on task completion
-// @route   GET /api/tasks/progress/:eventId
-// @access  Private
+
 const getEventProgress = async (req, res) => {
   try {
     const totalTasks = await Task.countDocuments({ event: req.params.eventId });
@@ -139,5 +129,6 @@ const getEventProgress = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export { createTask, getTasksByEvent, updateTaskStatus, getEventProgress };

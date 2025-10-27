@@ -9,33 +9,25 @@ const generateToken = (id) => {
 };
 
 
- 
- const registerUser = async (req, res) => {
-
+const registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
-
- 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: "Please add name, email, password, and role" });
   }
-
-
   if (!['user', 'admin'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role specified. Must be "user" or "admin".' });
+    return res.status(400).json({ message: 'Invalid role specified. Must be "user" or "admin".' });
   }
-
   try {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
     const user = await User.create({ name, email, password, role });
-
     res.status(201).json({
       _id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role, 
+      role: user.role,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -46,15 +38,12 @@ const generateToken = (id) => {
 
 
 
- const loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
   if (!email || !password) {
     return res.status(400).json({ message: "Please add all fields" });
   }
-
   const user = await User.findOne({ email });
-
   if (user && (await bcrypt.compare(password, user.password))) {
     res.json({
       _id: user.id,
@@ -69,7 +58,7 @@ const generateToken = (id) => {
 };
 
 
- const getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   try {
     const users = await User.find({}).select("-password");
     res.status(200).json(users);
@@ -79,7 +68,7 @@ const generateToken = (id) => {
 };
 
 
- const getMe = async (req, res) => {
+const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
     if (!user) {
@@ -95,21 +84,15 @@ const generateToken = (id) => {
 
 const updateUserProfile = async (req, res) => {
   const { name, password } = req.body;
-
   const user = await User.findById(req.user._id);
-
   if (user) {
     if (name) {
       user.name = name;
     }
-
-    
     if (password) {
       user.password = password;
     }
-
     const updatedUser = await user.save();
-
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
@@ -154,4 +137,4 @@ const createUserByAdmin = async (req, res) => {
 };
 
 
-export { registerUser, loginUser, getUsers,getMe,updateUserProfile,createUserByAdmin };
+export { registerUser, loginUser, getUsers, getMe, updateUserProfile, createUserByAdmin };
