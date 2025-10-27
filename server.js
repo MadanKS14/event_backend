@@ -49,7 +49,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
 
@@ -57,9 +57,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/tasks", taskRoutes);
 
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT;
-  server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-}
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server ready for connections`);
+});
 
 export default server;
