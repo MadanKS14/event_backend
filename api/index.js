@@ -39,15 +39,13 @@ app.use(express.urlencoded({ extended: false }));
 app.set("socketio", io);
 
 io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
 
   socket.on("join-event-room", (eventId) => {
     socket.join(eventId);
-    console.log(`Socket ${socket.id} joined room for event ${eventId}`);
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ User disconnected:", socket.id);
+    // console.log("User disconnected:", socket.id);
   });
 });
 

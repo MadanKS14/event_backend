@@ -36,20 +36,16 @@ app.use(express.urlencoded({ extended: false }));
 app.set("socketio", io);
 
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
 
   socket.on("join-event-room", (eventId) => {
     socket.join(eventId);
-    console.log(`User ${socket.id} joined room for event ${eventId}`);
   });
 
   socket.on("leave-event-room", (eventId) => {
     socket.leave(eventId);
-    console.log(`User ${socket.id} left room for event ${eventId}`);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
   });
 });
 
@@ -60,7 +56,6 @@ app.use("/api/tasks", taskRoutes);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket server ready for connections`);
 });
 
 export default server;
