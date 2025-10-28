@@ -15,7 +15,6 @@ connectDB();
 const app = express();
 const httpServer = http.createServer(app);
 
-// Setup Socket.IO Server
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
@@ -24,7 +23,6 @@ const io = new Server(httpServer, {
   },
 });
 
-// Setup Express CORS
 app.use(
   cors({
     origin: "*",
@@ -49,7 +47,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// API routes
 app.use("/api/users", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/tasks", taskRoutes);
